@@ -3,44 +3,124 @@
 @section('title', 'Create Product')
 
 @section('content')
-<h2 class="text-xl mb-4">New Product</h2>
+    <h1 class="text-xl font-semibold mb-4">Create Product</h1>
 
-<form action="{{ route('products.store') }}" method="POST">
-    @csrf
+    <div class="bg-white shadow rounded p-4">
 
-    <div class="mb-2">
-        <label>SKU</label>
-        <input name="sku" class="w-full border p-2" value="{{ old('sku') }}">
+        {{-- Global success/error --}}
+        {{-- @include('partials.alerts') --}}
+
+        <form action="{{ route('products.store') }}" method="POST">
+            @csrf
+
+            <div class="grid grid-cols-2 gap-4">
+
+                <div>
+                    <label class="block mb-1">Name</label>
+                    <input name="name"
+                           class="w-full border rounded p-2"
+                           value="{{ old('name') }}" required>
+
+                    @error('name')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block mb-1">SKU</label>
+                    <input name="sku"
+                           class="w-full border rounded p-2"
+                           value="{{ old('sku') }}">
+
+                    @error('sku')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block mb-1">Category</label>
+                    <select name="category_id" class="w-full border rounded p-2">
+                        <option value="">None</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}"
+                                {{ old('category_id') == $cat->id ? 'selected' : '' }}>
+                                {{ $cat->name }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @error('category_id')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block mb-1">Purchase Price</label>
+                    <input type="number"
+                           name="purchase_price"
+                           step="0.01"
+                           class="w-full border rounded p-2"
+                           value="{{ old('purchase_price') }}">
+
+                    @error('purchase_price')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block mb-1">Sell Price</label>
+                    <input type="number"
+                           name="sell_price"
+                           step="0.01"
+                           class="w-full border rounded p-2"
+                           value="{{ old('sell_price') }}">
+
+                    @error('sell_price')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block mb-1">Quantity</label>
+                    <input type="number"
+                           name="quantity"
+                           class="w-full border rounded p-2"
+                           value="{{ old('quantity') }}">
+
+                    @error('quantity')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block mb-1">Min Stock</label>
+                    <input type="number"
+                           name="min_stock"
+                           class="w-full border rounded p-2"
+                           value="{{ old('min_stock') }}">
+
+                    @error('min_stock')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="col-span-2">
+                    <label class="block mb-1">Description</label>
+                    <textarea name="description"
+                              class="w-full border rounded p-2 h-24">{{ old('description') }}</textarea>
+
+                    @error('description')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+            </div>
+
+            <div class="mt-4 flex justify-end">
+                <button class="px-4 py-2 bg-blue-600 text-white rounded">
+                    Save
+                </button>
+            </div>
+        </form>
     </div>
-
-    <div class="mb-2">
-        <label>Name</label>
-        <input name="name" class="w-full border p-2" value="{{ old('name') }}" required>
-    </div>
-
-    <div class="mb-2">
-        <label>Category</label>
-        <select name="category_id" class="w-full border p-2">
-            <option value="">-- none --</option>
-            @foreach($categories as $c)
-                <option value="{{ $c->id }}" @selected(old('category_id')==$c->id)>{{ $c->name }}</option>
-            @endforeach
-        </select>
-    </div>
-
-    <div class="grid grid-cols-3 gap-2 mb-2">
-        <input name="purchase_price" placeholder="Purchase price" class="border p-2" value="{{ old('purchase_price',0) }}">
-        <input name="sell_price" placeholder="Sell price" class="border p-2" value="{{ old('sell_price',0) }}">
-        <input name="quantity" placeholder="Quantity" type="number" class="border p-2" value="{{ old('quantity',0) }}">
-    </div>
-
-    <div class="mb-2">
-        <label>Min stock</label>
-        <input name="min_stock" type="number" class="w-full border p-2" value="{{ old('min_stock',0) }}">
-    </div>
-
-    <div>
-        <button class="px-4 py-2 bg-green-600 text-white rounded">Create</button>
-    </div>
-</form>
 @endsection

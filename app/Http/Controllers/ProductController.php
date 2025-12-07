@@ -64,7 +64,7 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        //
+        return view('dashboard.products.show', compact('product'));
     }
 
     /**
@@ -72,7 +72,12 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        //
+        $categories = Category::all();
+
+        return view('dashboard.products.edit', [
+            'product' => $product,
+            'categories' => $categories,
+        ]);
     }
 
     /**
@@ -80,7 +85,35 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
-        //
+        $data = $request->validate([
+            'sku' => 'nullable|string|unique:products,sku,' . $product->id,
+            'name' => 'required|string|max:255',
+            'category_id' => 'nullable|exists:categories,id',
+            'purchase_price' => 'numeric|min:0',
+            'sell_price' => 'numeric|min:0',
+            'quantity' => 'integer|min:0',
+            'min_stock' => 'integer|min:0',
+            'description' => 'nullable|string',
+        ]);
+
+        $oldQuantity = $product->quantity;
+        $newQuantity = $data['quantity'];
+
+        $product->update($data);
+
+        $difference = $newQuantity - $oldQuantity;
+
+        if ($difference !== 0) {
+            StockLog::create([
+                'product_id' => $product->id,
+                'change' => $difference,
+                'type' => $difference > 0 ? 'adjustment_in' : 'adjustment_out',
+                'user_id' => auth()->id(),
+                'note' => 'Manual quantity update via product edit',
+            ]);
+        }
+
+        return redirect()->route('products.index')->with('success', 'Product updated.');
     }
 
     /**
@@ -88,6 +121,8 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        //
+        $product->delete();
+
+        return redirect()->route('products.index')->with('success', 'product deleted');
     }
 }
