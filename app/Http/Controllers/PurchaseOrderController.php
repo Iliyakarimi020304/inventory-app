@@ -6,7 +6,9 @@ use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\StockLog;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderController extends Controller
 {
@@ -15,7 +17,8 @@ class PurchaseOrderController extends Controller
      */
     public function index()
     {
-        //
+        $orders = PurchaseOrder::with('supplier')->paginate(20);
+        return view('dashboard.purchase_orders.index', compact('orders'));
     }
 
     /**
@@ -23,7 +26,10 @@ class PurchaseOrderController extends Controller
      */
     public function create()
     {
-        //
+        $suppliers = Supplier::all();
+        $products = Product::all();
+
+        return view('dashboard.purchase_orders.create', compact('suppliers', 'products'));
     }
 
     /**
@@ -31,6 +37,7 @@ class PurchaseOrderController extends Controller
      */
     public function store(Request $request)
     {
+
         $data = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'items' => 'required|array|min:1',
@@ -40,50 +47,54 @@ class PurchaseOrderController extends Controller
             'status' => 'sometimes|in:pending,received,cancelled',
         ]);
 
-        // Compute totals
+
         $total = 0;
         foreach ($data['items'] as $it) {
             $total += $it['quantity'] * $it['unit_price'];
         }
 
-        $order = PurchaseOrder::create([
-            'order_number' => 'PO-'.time(),
-            'supplier_id' => $data['supplier_id'],
-            'status' => $request->input('status','received'),
-            'total' => $total,
-            'created_by' => auth()->id()
-        ]);
 
-        foreach ($data['items'] as $it) {
-            $lineTotal = $it['quantity'] * $it['unit_price'];
+        DB::transaction(function() use ($data, $total, $request) {
 
-            $poi = PurchaseOrderItem::create([
-                'purchase_order_id' => $order->id,
-                'product_id' => $it['product_id'],
-                'quantity' => $it['quantity'],
-                'unit_price' => $it['unit_price'],
-                'line_total' => $lineTotal,
+
+            $order = PurchaseOrder::create([
+                'order_number' => 'PO-'.time(),
+                'supplier_id' => $data['supplier_id'],
+                'status' => $request->input('status', 'received'),
+                'total' => $total,
+                'created_by' => auth()->id(),
             ]);
 
-            // If status received, increase stock and create log
-            if ($order->status === 'received') {
-                $product = Product::find($it['product_id']);
-                $product->quantity += $it['quantity'];
-                $product->save();
 
-                StockLog::create([
-                    'product_id' => $product->id,
-                    'change' => $it['quantity'],
-                    'type' => 'purchase_in',
-                    'reference_id' => $order->id,
-                    'user_id' => auth()->id(),
-                    'note' => 'Received via PO '. $order->order_number,
+            foreach ($data['items'] as $it) {
+                $lineTotal = $it['quantity'] * $it['unit_price'];
+
+                PurchaseOrderItem::create([
+                    'purchase_order_id' => $order->id,
+                    'product_id' => $it['product_id'],
+                    'quantity' => $it['quantity'],
+                    'unit_price' => $it['unit_price'],
+                    'line_total' => $lineTotal,
                 ]);
-            }
-        }
 
-        return redirect()->route('purchase-orders.show', $order->id)
-            ->with('success', 'Purchase order created.');
+                if ($order->status === 'received') {
+
+                    Product::where('id', $it['product_id'])->increment('quantity', $it['quantity']);
+
+
+                    StockLog::create([
+                        'product_id' => $it['product_id'],
+                        'change' => $it['quantity'],
+                        'type' => 'purchase_in',
+                        'reference_id' => $order->id,
+                        'user_id' => auth()->id(),
+                        'note' => 'Received via PO '. $order->order_number,
+                    ]);
+                }
+            }
+        });
+
+        return redirect()->route('purchase-orders.index')->with('success', 'Purchase order created.');
     }
 
     /**
@@ -97,9 +108,12 @@ class PurchaseOrderController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(PurchaseOrder $purchaseOrder)
     {
-        //
+        $purchaseOrder->load('items.proudct', 'supplier');
+        $supplier = Supplier::all();
+
+        return view('dashboard.purchase-orders.edit', compact('purchaseOrder', 'suppliers'));
     }
 
     /**

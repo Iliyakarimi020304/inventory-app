@@ -12,7 +12,8 @@ class SupplierController extends Controller
      */
     public function index()
     {
-        //
+        $suppliers = Supplier::paginate(20);
+        return view('dashboard.suppliers.index', compact('suppliers'));
     }
 
     /**
@@ -20,7 +21,7 @@ class SupplierController extends Controller
      */
     public function create()
     {
-        //
+        return view('dashboard.suppliers.create');
     }
 
     /**
@@ -28,7 +29,17 @@ class SupplierController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email',
+            'phone' => 'nullable|string|max:50',
+            'address' => 'nullable|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        Supplier::create($data);
+
+        return redirect()->route('suppliers.index')->with('success', 'Supplier created');
     }
 
     /**
@@ -44,7 +55,7 @@ class SupplierController extends Controller
      */
     public function edit(Supplier $supplier)
     {
-        //
+        return view('dashboard.suppliers.edit', compact('supplier'));
     }
 
     /**
@@ -52,7 +63,17 @@ class SupplierController extends Controller
      */
     public function update(Request $request, Supplier $supplier)
     {
-        //
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email',
+            'phone' => 'nullable|string|max:50',
+            'address' => 'nullable|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $supplier->update($data);
+
+        return redirect()->route('suppliers.index')->with('success', 'Supplier updated');
     }
 
     /**
@@ -60,6 +81,7 @@ class SupplierController extends Controller
      */
     public function destroy(Supplier $supplier)
     {
-        //
+        $supplier->delete();
+        return redirect()->route('suppliers.index')->with('success', 'Supplier deleted');
     }
 }

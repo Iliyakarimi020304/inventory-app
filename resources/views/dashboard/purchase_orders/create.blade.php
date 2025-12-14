@@ -1,39 +1,92 @@
 @extends('layouts.dashboard')
 
-@section('title','Create Purchase Order')
+@section('title', 'New Purchase Order')
 
 @section('content')
-<h2>Create Purchase Order</h2>
+<div class="bg-white p-4 rounded shadow space-y-4">
 
-<form action="{{ route('purchase-orders.store') }}" method="POST">
-    @csrf
+    <h1 class="text-xl font-semibold">New Purchase Order</h1>
 
-    <div class="mb-2">
-        <label>Supplier</label>
-        <select name="supplier_id" class="w-full border p-2" required>
-            @foreach($suppliers as $s)
-                <option value="{{ $s->id }}">{{ $s->name }}</option>
-            @endforeach
-        </select>
-    </div>
+    <form action="{{ route('purchase-orders.store') }}" method="POST">
+        @csrf
 
-    <p class="mb-2 text-sm text-gray-500">Enter items (product id, quantity, unit price). Submit minimal 1 item.</p>
+        {{-- Supplier --}}
+        <div>
+            <label class="block text-sm font-medium mb-1">Supplier</label>
+            <select name="supplier_id" class="border p-2 w-full">
+                <option value="">-- Select supplier --</option>
+                @foreach($suppliers as $sup)
+                    <option value="{{ $sup->id }}">{{ $sup->name }}</option>
+                @endforeach
+            </select>
+        </div>
 
-    <div class="mb-2">
-        <label>Item 1 - Product ID</label>
-        <input name="items[0][product_id]" class="w-full border p-2" required>
-    </div>
-    <div class="mb-2">
-        <label>Item 1 - Quantity</label>
-        <input name="items[0][quantity]" class="w-full border p-2" value="1" required>
-    </div>
-    <div class="mb-2">
-        <label>Item 1 - Unit price</label>
-        <input name="items[0][unit_price]" class="w-full border p-2" value="0" required>
-    </div>
+        {{-- Items container --}}
+        <div id="items">
+            <h2 class="text-lg font-semibold mt-4">Items</h2>
 
-    <div class="mt-4">
-        <button class="px-4 py-2 bg-blue-600 text-white">Create & Receive</button>
-    </div>
-</form>
+            <div class="item-row flex gap-2 mb-2">
+                <select name="items[0][product_id]" class="border p-2">
+                    @foreach($products as $p)
+                        <option value="{{ $p->id }}">{{ $p->name }}</option>
+                    @endforeach
+                </select>
+
+                <input type="number" name="items[0][quantity]" class="border p-2 w-20" placeholder="Qty">
+
+                <input type="number" step="0.01" name="items[0][unit_price]" class="border p-2 w-28" placeholder="Price">
+            </div>
+        </div>
+
+        <button
+            type="button"
+            id="addRow"
+            class="px-2 py-1 bg-gray-700 text-white rounded">
+            + Add Item
+        </button>
+
+        {{-- Status --}}
+        <div class="mt-4">
+            <label class="block text-sm font-medium mb-1">Status</label>
+            <select name="status" class="border p-2 w-full">
+                <option value="received">received</option>
+                <option value="pending">pending</option>
+                <option value="cancelled">cancelled</option>
+            </select>
+        </div>
+
+        <button
+            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
+            Save Order
+        </button>
+
+    </form>
+</div>
+
+<script>
+    let index = 1;
+
+    document.getElementById('addRow').addEventListener('click', () => {
+        const container = document.getElementById('items');
+
+        const row = document.createElement('div');
+        row.classList.add('item-row', 'flex', 'gap-2', 'mb-2');
+
+        row.innerHTML = `
+            <select name="items[${index}][product_id]" class="border p-2">
+                @foreach($products as $p)
+                    <option value="{{ $p->id }}">{{ $p->name }}</option>
+                @endforeach
+            </select>
+
+            <input type="number" name="items[${index}][quantity]" class="border p-2 w-20" placeholder="Qty">
+
+            <input type="number" step="0.01" name="items[${index}][unit_price]" class="border p-2 w-28" placeholder="Price">
+        `;
+
+        container.appendChild(row);
+        index++;
+    });
+</script>
+
 @endsection
